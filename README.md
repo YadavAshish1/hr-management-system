@@ -86,6 +86,11 @@ The application will be available at `http://localhost:5173`.
 
 API Documentation `https://hr-management-system-qkz6.onrender.com/docs`
 
+## Assumptions
+
+- Single admin user (no authentication implementation requested).
+- SQLite is used for simplicity and ease of setup (file-based). For production, PostgreSQL is recommended.
+- Basic validation is implemented.
 
 ## Project Structure
 
