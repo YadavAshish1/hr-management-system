@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getEmployees, getAttendance, markAttendance } from '../services/api';
-import { Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle, AlertCircle, Filter, BarChart3 } from 'lucide-react';
 
 const AttendancePage = () => {
   const [employees, setEmployees] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filterDate, setFilterDate] = useState('');
   const [formData, setFormData] = useState({
     employee_id: '',
     date: new Date().toISOString().split('T')[0],
@@ -63,6 +64,29 @@ const AttendancePage = () => {
   const getEmployeeDetails = (id) => {
       return employees.find(e => e.id === id);
   };
+
+  // Filter attendance records by date (empty filterDate = show all)
+  const filteredRecords = useMemo(() => {
+    if (!filterDate) return attendanceRecords.slice().reverse();
+    return attendanceRecords
+      .filter((record) => record.date === filterDate)
+      .slice()
+      .reverse();
+  }, [attendanceRecords, filterDate]);
+
+  // Total present days per employee (from all records)
+  const presentDaysByEmployee = useMemo(() => {
+    const counts = {};
+    attendanceRecords.forEach((record) => {
+      if (record.status === 'Present') {
+        counts[record.employee_id] = (counts[record.employee_id] || 0) + 1;
+      }
+    });
+    return employees.map((emp) => ({
+      ...emp,
+      presentDays: counts[emp.id] || 0,
+    })).sort((a, b) => b.presentDays - a.presentDays);
+  }, [attendanceRecords, employees]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -146,17 +170,41 @@ const AttendancePage = () => {
 
         {/* Attendance Records List */}
         <div className="lg:col-span-2 bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-             <h2 className="text-lg font-medium text-gray-900">Recent Attendance Records</h2>
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-wrap items-center justify-between gap-4">
+            <h2 className="text-lg font-medium text-gray-900">Recent Attendance Records</h2>
+            <div className="flex items-center gap-2">
+              <Filter size={18} className="text-gray-500" />
+              <label htmlFor="filter-date" className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                Filter by date
+              </label>
+              <input
+                id="filter-date"
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+              />
+              {filterDate && (
+                <button
+                  type="button"
+                  onClick={() => setFilterDate('')}
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
           
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
-          ) : attendanceRecords.length === 0 ? (
+          ) : filteredRecords.length === 0 ? (
              <div className="text-center py-12">
-               <p className="text-sm text-gray-500">No attendance records found.</p>
+               <p className="text-sm text-gray-500">
+                 {filterDate ? `No attendance records for ${filterDate}.` : 'No attendance records found.'}
+               </p>
              </div>
           ) : (
             <div className="overflow-x-auto">
@@ -175,7 +223,7 @@ const AttendancePage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {attendanceRecords.slice().reverse().map((record) => {
+                  {filteredRecords.map((record) => {
                       const empDetails = getEmployeeDetails(record.employee_id);
                       return (
                     <tr key={record.id} className="hover:bg-gray-50">
@@ -216,6 +264,58 @@ const AttendancePage = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Total present days per employee */}
+      <div className="mt-8 bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+            <BarChart3 size={20} />
+            Total Present Days per Employee
+          </h2>
+        </div>
+        {loading ? (
+          <div className="flex justify-center items-center h-24">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : presentDaysByEmployee.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-gray-500">No employees yet. Add employees and mark attendance to see totals.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Employee
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Employee ID
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Present days
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {presentDaysByEmployee.map((emp) => (
+                  <tr key={emp.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {emp.full_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {emp.employee_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                      {emp.presentDays}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

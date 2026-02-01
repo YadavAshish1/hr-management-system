@@ -6,6 +6,7 @@ const EmployeePage = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,11 +37,14 @@ const EmployeePage = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this employee?')) {
       try {
+        setDeletingId(id);
         await deleteEmployee(id);
         setEmployees(employees.filter((emp) => emp.id !== id));
       } catch (err) {
         alert('Failed to delete employee.');
         console.error(err);
+      } finally {
+        setDeletingId(null);
       }
     }
   };
@@ -222,10 +226,19 @@ const EmployeePage = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
+                      type="button"
                       onClick={() => handleDelete(employee.id)}
-                      className="text-red-600 hover:text-red-900 transition-colors"
+                      disabled={deletingId === employee.id}
+                      className={`inline-flex items-center gap-1.5 text-red-600 hover:text-red-900 transition-colors ${deletingId === employee.id ? 'opacity-75 cursor-not-allowed' : ''}`}
                     >
-                      <Trash2 size={18} />
+                      {deletingId === employee.id ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
                     </button>
                   </td>
                 </tr>
