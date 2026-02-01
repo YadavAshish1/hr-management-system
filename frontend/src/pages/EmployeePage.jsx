@@ -5,6 +5,7 @@ import { Trash2, Plus, AlertCircle, Users } from 'lucide-react';
 const EmployeePage = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -52,9 +53,11 @@ const EmployeePage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setSaving(true);
       const newEmployee = await createEmployee(formData);
       setEmployees([...employees, newEmployee]);
       setShowForm(false);
+      setSaving(false);
       setFormData({
         employee_id: '',
         full_name: '',
@@ -151,9 +154,17 @@ const EmployeePage = () => {
               </button>
               <button
                 type="submit"
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={saving}
+                className={`inline-flex justify-center items-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${saving ? 'opacity-75 cursor-not-allowed' : ''}`}
               >
-                Save Employee
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Employee'
+                )}
               </button>
             </div>
           </form>
