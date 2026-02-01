@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getEmployees, createEmployee, deleteEmployee } from '../services/api';
+import { useToast } from '../context/ToastContext';
 import { Trash2, Plus, AlertCircle, Users } from 'lucide-react';
 
 const EmployeePage = () => {
+  const { toast } = useToast();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,17 +37,16 @@ const EmployeePage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this employee?')) {
-      try {
-        setDeletingId(id);
-        await deleteEmployee(id);
-        setEmployees(employees.filter((emp) => emp.id !== id));
-      } catch (err) {
-        alert('Failed to delete employee.');
-        console.error(err);
-      } finally {
-        setDeletingId(null);
-      }
+    if (!window.confirm('Are you sure you want to delete this employee?')) return;
+    try {
+      setDeletingId(id);
+      await deleteEmployee(id);
+      setEmployees(employees.filter((emp) => emp.id !== id));
+    } catch (err) {
+      toast.error('Failed to delete employee.');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -69,7 +70,8 @@ const EmployeePage = () => {
         department: '',
       });
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to create employee.');
+      setSaving(false);
+      toast.error(err.response?.data?.detail || 'Failed to create employee.');
       console.error(err);
     }
   };

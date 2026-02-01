@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getEmployees, getAttendance, markAttendance } from '../services/api';
+import { useToast } from '../context/ToastContext';
 import { Calendar, CheckCircle, XCircle, AlertCircle, Filter, BarChart3 } from 'lucide-react';
 
 const AttendancePage = () => {
+  const { toast } = useToast();
   const [employees, setEmployees] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,9 +49,9 @@ const AttendancePage = () => {
     try {
       const newAttendance = await markAttendance(formData);
       setAttendanceRecords([...attendanceRecords, newAttendance]);
-      alert('Attendance marked successfully!');
+      toast.success('Attendance marked successfully!');
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to mark attendance.');
+      toast.error(err.response?.data?.detail || 'Failed to mark attendance.');
       console.error(err);
     }
   };
